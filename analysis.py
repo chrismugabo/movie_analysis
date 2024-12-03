@@ -2,6 +2,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.stats import chi2_contingency
+import seaborn as sns
 
 print("Script is running...")
 
@@ -62,19 +63,41 @@ print(f"Chi-Square Value: {chi2}")
 print(f"Degrees of Freedom: {dof}")
 print(f"P-Value: {p_value}")
 
-# ===== STEP 4: Correlation Analysis =====
-# Compute correlation for ratings
-# Since we removed runtime, we focus only on score
-correlation_matrix = merged_data.groupby('platform')[['score']].corr()
-
-# Print correlation analysis results
-print("=== Correlation Analysis ===")
-print(correlation_matrix)
-
 # Optional: Visualize Genre Distribution
 top_genres = genre_counts.sum(axis=0).sort_values(ascending=False).head(10)
 top_genres.plot(kind='bar', figsize=(10, 5), title='Top 10 Genres by Frequency')
 plt.xlabel('Genres')
 plt.ylabel('Frequency')
 plt.savefig('top_genres_distribution.png')
+plt.show()
+
+# ===== STEP 4: Enhanced Correlation Analysis =====
+# One-hot encode genres for correlation
+merged_data_expanded = merged_data.copy()
+merged_data_expanded = merged_data_expanded.join(
+    merged_data_expanded['genre'].str.get_dummies(sep=',')
+)
+
+# Select numerical columns for correlation analysis
+numerical_cols = merged_data_expanded.select_dtypes(include=['float64', 'int64']).columns
+
+# Compute correlation matrices for IMDb and Netflix
+imdb_corr_matrix = merged_data_expanded[merged_data_expanded['platform'] == 'IMDb'][numerical_cols].corr()
+netflix_corr_matrix = merged_data_expanded[merged_data_expanded['platform'] == 'Netflix'][numerical_cols].corr()
+
+# Visualize Correlation Matrices
+plt.figure(figsize=(12, 6))
+
+# IMDb Correlation Heatmap
+plt.subplot(1, 2, 1)
+sns.heatmap(imdb_corr_matrix, annot=False, cmap='coolwarm', fmt=".2f")
+plt.title('IMDb Correlation Matrix')
+
+# Netflix Correlation Heatmap
+plt.subplot(1, 2, 2)
+sns.heatmap(netflix_corr_matrix, annot=False, cmap='coolwarm', fmt=".2f")
+plt.title('Netflix Correlation Matrix')
+
+plt.tight_layout()
+plt.savefig('enhanced_correlation_matrices.png')
 plt.show()
